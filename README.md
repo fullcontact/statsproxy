@@ -5,8 +5,6 @@ StatsProxy receives incoming statsd traffic, hashes the metric name, and sends i
 
 Doesn't do any fancy liveliness checks or consistent hashing.
 
-StatsD proxy.js is garbage.
-
 Initial code & dist script borrowed from https://github.com/bitly/statsdaemon
 
 ###Running
