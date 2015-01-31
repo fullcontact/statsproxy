@@ -33,7 +33,7 @@ type Packet struct {
 
 var (
 	serviceAddress  = flag.String("address", ":8125", "UDP service address")
-	debug           = flag.Bool("debug", false, "print statistics sent to graphite")
+	debug           = flag.Bool("debug", false, "print verbose data about packets sent and servers chosen")
 	showVersion     = flag.Bool("version", false, "print version string")
 	workers         = flag.Int("workers", 2, "number of goroutines working on incoming UDP data")
 	hosts           = Hosts{}
