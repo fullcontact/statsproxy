@@ -21,6 +21,7 @@ Usage of ./statsproxy:
   -cpuprofile="": write cpu profile to file
   -debug=false: print verbose data about packets sent and servers chosen
   -hosts=[]: backend statsd hosts
+  -tickerPeriod=5s: writes internal stats every tickerPeriod seconds
   -version=false: print version string
   -workers=2: number of goroutines working on incoming UDP data
 ```
