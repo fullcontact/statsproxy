@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"hash/fnv"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -12,75 +12,37 @@ import (
 	"runtime"
 	"runtime/pprof"
 	"strconv"
-	"strings"
 	"sync/atomic"
 	"syscall"
 	"time"
 )
 
 const (
-	MAX_UNPROCESSED_PACKETS = 1000
-	MAX_UDP_PACKET_SIZE     = 512
-	SOCKET_READ_BUFFER      = 4194304
+	MAX_UDP_PACKET_SIZE = 512
+	SOCKET_READ_BUFFER  = 4194304
+)
+
+var (
+	serviceAddress = flag.String("address", ":8125", "UDP service address")
+	debug          = flag.Bool("debug", false, "print verbose data about packets sent and servers chosen")
+	showVersion    = flag.Bool("version", false, "print version string")
+	workers        = flag.Int("workers", 2, "number of goroutines working on incoming UDP data")
+	hosts          = Hosts{}
+	cpuprofile     = flag.String("cpuprofile", "", "write cpu profile to file")
+	tickerPeriod   = flag.Duration("tickerPeriod", 5*time.Second, "writes internal stats every tickerPeriod seconds")
+
+	// State
+	hostConnections = make(map[*Host]io.Writer)
+	packetCount     uint32
 )
 
 var signalchan chan os.Signal
 
-type Packet struct {
-	Bucket string
-	Raw    string
-}
-
-var (
-	serviceAddress  = flag.String("address", ":8125", "UDP service address")
-	debug           = flag.Bool("debug", false, "print verbose data about packets sent and servers chosen")
-	showVersion     = flag.Bool("version", false, "print version string")
-	workers         = flag.Int("workers", 2, "number of goroutines working on incoming UDP data")
-	hosts           = Hosts{}
-	hostConnections = make(map[*Host]*net.UDPConn)
-	hasher          = fnv.New32()
-	packetCount     uint32
-	cpuprofile      = flag.String("cpuprofile", "", "write cpu profile to file")
-)
-
-type Hosts []*Host
-type Host struct {
-	Host string
-	Port int
-}
-
-func (a *Hosts) Set(s string) error {
-	portIdx := strings.Index(s, ":")
-	if portIdx < 0 {
-		log.Fatalf("Host is missing port: %s\n", s)
-	}
-
-	port, err := strconv.Atoi(s[portIdx+1:])
-	if err != nil {
-		log.Fatalf("Error parsing host: %s - %s\n", s, err)
-	}
-
-	*a = append(*a, &Host{s[0:portIdx], port})
-	return nil
-}
-
-func (p *Host) String() string {
-	return fmt.Sprintf("%v:%v", p.Host, p.Port)
-}
-
-func (a *Hosts) String() string {
-	return fmt.Sprintf("%v", *a)
-}
-
-func hash(s string) uint32 {
-	h := fnv.New32a()
-	h.Write([]byte(s))
-	return h.Sum32()
-}
-
 func init() {
 	flag.Var(&hosts, "hosts",
 		"backend statsd hosts")
+
+	signalchan = make(chan os.Signal)
 }
 
 func monitor() {
@@ -93,33 +55,42 @@ func monitor() {
 		defer pprof.StopCPUProfile()
 	}
 
-	period := time.Duration(5) * time.Second
-	ticker := time.NewTicker(period)
+	ticker := time.NewTicker(*tickerPeriod)
+signalLoop:
 	for {
 		select {
 		case sig := <-signalchan:
 			fmt.Printf("!! Caught signal %d... shutting down\n", sig)
-			defer pprof.StopCPUProfile()
-			return
+			break signalLoop
 		case <-ticker.C:
 			sendStats()
 		}
 	}
 }
 
-func sendStats() {
-	packetCount := atomic.SwapUint32(&packetCount, 0)
+func udpListener(listener *net.UDPConn) {
+	message := make([]byte, MAX_UDP_PACKET_SIZE)
+	for {
+		n, remaddr, err := listener.ReadFromUDP(message)
+		if err != nil {
+			log.Printf("ERROR: reading UDP packet from %+v - %s", remaddr, err)
+			continue
+		}
 
-	DPrintf("Received %d packets in last 5 seconds (%f pps)\n", packetCount, float64(packetCount)/5)
-
-	sendCounter("statsproxy.packets", int32(packetCount))
+		dataHandler(message[:n])
+	}
 }
 
-func sendCounter(path string, delta int32) {
-	packetHandler(&Packet{path, path + ":" + strconv.Itoa(int(delta)) + "|c\n"})
+func dataHandler(data []byte) {
+	packets := parseMessage(data)
+	for _, packet := range packets {
+		packetHandler(&packet)
+	}
 }
 
 func packetHandler(s *Packet) {
+	atomic.AddUint32(&packetCount, 1)
+
 	DPrintf("Received packet - %+v\n", s)
 	host := hosts[hash(s.Bucket)%uint32(len(hosts))]
 	DPrintf("Hashed packet to host - %+v\n", host)
@@ -128,8 +99,9 @@ func packetHandler(s *Packet) {
 	DPrintf("Wrote packet to host - %+v\n", host)
 }
 
-func parseMessage(data []byte) {
+func parseMessage(data []byte) []Packet {
 	var input []byte
+	var packets = make([]Packet, 0)
 
 	for _, line := range bytes.Split(data, []byte("\n")) {
 		if len(line) == 0 {
@@ -146,34 +118,27 @@ func parseMessage(data []byte) {
 
 		name := input[:index]
 
-		packet := &Packet{
+		packet := Packet{
 			Bucket: string(name),
 			Raw:    string(line) + "\n",
 		}
 
-		atomic.AddUint32(&packetCount, 1)
-
-		packetHandler(packet)
+		packets = append(packets, packet)
 	}
+
+	return packets
 }
 
-func udpListener(listener *net.UDPConn) {
-	message := make([]byte, MAX_UDP_PACKET_SIZE)
-	for {
-		n, remaddr, err := listener.ReadFromUDP(message)
-		if err != nil {
-			log.Printf("ERROR: reading UDP packet from %+v - %s", remaddr, err)
-			continue
-		}
+func sendStats() {
+	packetCount := atomic.SwapUint32(&packetCount, 0)
 
-		parseMessage(message[:n])
-	}
+	DPrintf("Received %d packets in last 5 seconds (%f pps)\n", packetCount, float64(packetCount)/5)
+
+	sendCounter("statsproxy.packets", int32(packetCount))
 }
 
-func DPrintf(format string, v ...interface{}) {
-	if *debug {
-		log.Printf(format, v...)
-	}
+func sendCounter(path string, delta int32) {
+	packetHandler(&Packet{path, path + ":" + strconv.Itoa(int(delta)) + "|c\n"})
 }
 
 func main() {
