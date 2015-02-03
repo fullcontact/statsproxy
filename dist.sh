@@ -12,8 +12,8 @@ arch=$(go env GOARCH)
 version=$(cat $DIR/version.go | grep "const VERSION" | awk '{print $NF}' | sed 's/"//g')
 goversion=$(go version | awk '{print $3}')
 
-# echo "... running tests"
-# ./test.sh || exit 1
+ echo "... running tests"
+ go test || exit 1
 
 for os in linux darwin; do
     echo "... building v$version for $os/$arch"
