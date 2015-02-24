@@ -12,6 +12,7 @@ import (
 	"runtime"
 	"runtime/pprof"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -32,8 +33,9 @@ var (
 	tickerPeriod   = flag.Duration("tickerPeriod", 5*time.Second, "writes internal stats every tickerPeriod seconds")
 
 	// State
-	hostConnections = make(map[*Host]io.Writer)
-	packetCount     uint32
+	hostConnections      = make(map[*Host]io.Writer)
+	packetCount          uint32
+	packetCountPerServer = make(map[*Host]*uint32)
 )
 
 var signalchan chan os.Signal
@@ -89,11 +91,12 @@ func dataHandler(data []byte) {
 }
 
 func packetHandler(s *Packet) {
-	atomic.AddUint32(&packetCount, 1)
-
 	DPrintf("Received packet - %+v\n", s)
 	host := hosts[hash(s.Bucket)%uint32(len(hosts))]
 	DPrintf("Hashed packet to host - %+v\n", host)
+
+	atomic.AddUint32(&packetCount, 1)
+	atomic.AddUint32(packetCountPerServer[host], 1)
 
 	hostConnections[host].Write([]byte(s.Raw))
 	DPrintf("Wrote packet to host - %+v\n", host)
@@ -131,10 +134,18 @@ func parseMessage(data []byte) []Packet {
 
 func sendStats() {
 	packetCount := atomic.SwapUint32(&packetCount, 0)
-
 	DPrintf("Received %d packets in last 5 seconds (%f pps)\n", packetCount, float64(packetCount)/5)
-
 	sendCounter("statsproxy.packets", int32(packetCount))
+
+	for host, stat := range packetCountPerServer {
+		packets := atomic.SwapUint32(stat, 0)
+		DPrintf("Received %d packets in last 5 seconds (%f pps) for host %s\n", packets, float64(packets)/5, host)
+		sendCounter("statsproxy.host."+sanitize(host)+".packets", int32(packets))
+	}
+}
+
+func sanitize(h *Host) string {
+	return strings.Replace(strings.Replace(h.String(), ".", "_", -1), ":", "_", -1)
 }
 
 func sendCounter(path string, delta int32) {
@@ -173,6 +184,8 @@ func main() {
 		}
 
 		hostConnections[host] = conn
+		zero := uint32(0)
+		packetCountPerServer[host] = &zero
 	}
 
 	address, _ := net.ResolveUDPAddr("udp", *serviceAddress)
