@@ -196,7 +196,7 @@ func main() {
 	address, _ := net.ResolveUDPAddr("udp", config.Service.Port)
 	common.Logger.Info(fmt.Sprintf("listening on %s", address))
 	listener, err := net.ListenUDP("udp4", address)
-	listener.SetReadBuffer(config.Service.SocketReadBuffer)
+	//listener.SetReadBuffer(config.Service.SocketReadBuffer)
 	if err != nil {
 		log.Fatalf("ERROR: ListenUDP - %s", err)
 	}
