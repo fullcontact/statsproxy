@@ -196,6 +196,8 @@ func main() {
 	address, _ := net.ResolveUDPAddr("udp", config.Service.Port)
 	common.Logger.Info(fmt.Sprintf("listening on %s", address))
 	listener, err := net.ListenUDP("udp4", address)
+	// Having this setting the read buffer was causing weird packet reception
+	// issues locally
 	//listener.SetReadBuffer(config.Service.SocketReadBuffer)
 	if err != nil {
 		log.Fatalf("ERROR: ListenUDP - %s", err)
