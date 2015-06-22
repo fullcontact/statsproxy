@@ -52,7 +52,7 @@ signalLoop:
 	for {
 		select {
 		case sig := <-signalchan:
-			fmt.Printf("!! Caught signal %d... shutting down\n", sig)
+			common.Logger.Info(fmt.Sprintf("!! Caught signal %d... shutting down\n", sig))
 			break signalLoop
 		case <-ticker.C:
 			sendStats()
@@ -65,7 +65,8 @@ func udpListener(listener *net.UDPConn) {
 	for {
 		n, remaddr, err := listener.ReadFromUDP(message)
 		if err != nil {
-			log.Printf("ERROR: reading UDP packet from %+v - %s", remaddr, err)
+			common.Logger.Err(fmt.Sprintf("ERROR: reading UDP packet from %+v - %s",
+				remaddr, err))
 			continue
 		}
 
@@ -86,7 +87,9 @@ func packetHandler(s Packet) {
 	common.Logger.Info(fmt.Sprintf("Hashed packet to host - %+v\n", host))
 
 	atomic.AddUint32(&packetCount, 1)
+	common.Logger.Info(fmt.Sprintf("The counter for %v is %d", host.String(), packetCountPerServer[&host]))
 	atomic.AddUint32(packetCountPerServer[&host], 1)
+	common.Logger.Info(fmt.Sprintf("The counter for %v is %d", host.String(), packetCountPerServer[&host]))
 
 	hostConnections[&host].Write([]byte(s.Raw))
 	common.Logger.Info(fmt.Sprintf("Wrote packet to host - %+v\n", host))
@@ -169,13 +172,16 @@ func main() {
 		log.Fatalf("You must provide at least one downstream host to proxy to.\n")
 	}
 
-	log.Printf("Initialized with %v downstream hosts", len(config.Service.Statsd.Hosts))
+	common.Logger.Info(fmt.Sprintf("Initialized with %v downstream hosts",
+		len(config.Service.Statsd.Hosts)))
 
 	for _, host := range config.Service.Statsd.Hosts {
 		addr, err := net.ResolveUDPAddr("udp", host.String())
 		if err != nil {
 			log.Fatalf("Failed to resolve host %v - %s", host, err)
 		}
+
+		common.Logger.Info(fmt.Sprintf("The host address is %v", addr.String()))
 
 		conn, err := net.DialUDP("udp", nil, addr)
 		if err != nil {
@@ -188,7 +194,7 @@ func main() {
 	}
 
 	address, _ := net.ResolveUDPAddr("udp", config.Service.Port)
-	log.Printf("listening on %s", address)
+	common.Logger.Info(fmt.Sprintf("listening on %s", address))
 	listener, err := net.ListenUDP("udp4", address)
 	listener.SetReadBuffer(config.Service.SocketReadBuffer)
 	if err != nil {

@@ -21,8 +21,8 @@ type StatsproxyConfig struct {
 	Port             string `json:"port"`
 	TickerPeriod     int    `json:"ticker_period"`
 	Workers          int
-	Logger           LogConfig `json:"logger"`
 	Name             string
+	Logger           LogConfig `json:"logger"`
 }
 
 type LogConfig struct {
@@ -34,7 +34,6 @@ type Statsd struct {
 }
 
 func InitializeConfig(f string) error {
-
 	file := path.Clean(f)
 	raw, err := ioutil.ReadFile(file)
 	if err != nil {
