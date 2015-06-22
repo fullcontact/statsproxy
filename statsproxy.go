@@ -25,9 +25,9 @@ var (
 	cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
 
 	// State
-	hostConnections      = make(map[*config.Host]io.Writer)
+	hostConnections      = make(map[config.Host]io.Writer)
 	packetCount          uint32
-	packetCountPerServer = make(map[*config.Host]*uint32)
+	packetCountPerServer = make(map[config.Host]*uint32)
 )
 
 var signalchan chan os.Signal
@@ -87,11 +87,11 @@ func packetHandler(s Packet) {
 	common.Logger.Info(fmt.Sprintf("Hashed packet to host - %+v\n", host))
 
 	atomic.AddUint32(&packetCount, 1)
-	common.Logger.Info(fmt.Sprintf("The counter for %v is %d", host.String(), packetCountPerServer[&host]))
-	atomic.AddUint32(packetCountPerServer[&host], 1)
-	common.Logger.Info(fmt.Sprintf("The counter for %v is %d", host.String(), packetCountPerServer[&host]))
+	common.Logger.Info(fmt.Sprintf("The counter for %v is %d", host.String(), packetCountPerServer[host]))
+	atomic.AddUint32(packetCountPerServer[host], 1)
+	common.Logger.Info(fmt.Sprintf("The counter for %v is %d", host.String(), packetCountPerServer[host]))
 
-	hostConnections[&host].Write([]byte(s.Raw))
+	hostConnections[host].Write([]byte(s.Raw))
 	common.Logger.Info(fmt.Sprintf("Wrote packet to host - %+v\n", host))
 }
 
@@ -141,7 +141,7 @@ func sendStats() {
 	}
 }
 
-func sanitize(h *config.Host) string {
+func sanitize(h config.Host) string {
 	return strings.Replace(strings.Replace(h.String(), ".", "_", -1), ":", "_", -1)
 }
 
@@ -188,9 +188,9 @@ func main() {
 			log.Fatalf("Failed to connect to host %v - %s", addr, err)
 		}
 
-		hostConnections[&host] = conn
+		hostConnections[host] = conn
 		zero := uint32(0)
-		packetCountPerServer[&host] = &zero
+		packetCountPerServer[host] = &zero
 	}
 
 	address, _ := net.ResolveUDPAddr("udp", config.Service.Port)
