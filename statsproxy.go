@@ -82,17 +82,14 @@ func dataHandler(data []byte) {
 }
 
 func packetHandler(s Packet) {
-	common.Logger.Info(fmt.Sprintf("Received packet - %+v\n", s))
 	host := config.Service.Statsd.Hosts[common.Hash(s.Bucket)%uint32(len(config.Service.Statsd.Hosts))]
-	common.Logger.Info(fmt.Sprintf("Hashed packet to host - %+v\n", host))
 
+	// increment packet counts and whatnot for the metrics that statsproxy sends
+	// about itself.
 	atomic.AddUint32(&packetCount, 1)
-	common.Logger.Info(fmt.Sprintf("The counter for %v is %d", host.String(), packetCountPerServer[host]))
 	atomic.AddUint32(packetCountPerServer[host], 1)
-	common.Logger.Info(fmt.Sprintf("The counter for %v is %d", host.String(), packetCountPerServer[host]))
 
 	hostConnections[host].Write([]byte(s.Raw))
-	common.Logger.Info(fmt.Sprintf("Wrote packet to host - %+v\n", host))
 }
 
 func parseMessage(data []byte) []Packet {
@@ -196,9 +193,10 @@ func main() {
 	address, _ := net.ResolveUDPAddr("udp", config.Service.Port)
 	common.Logger.Info(fmt.Sprintf("listening on %s", address))
 	listener, err := net.ListenUDP("udp4", address)
-	// Having this setting the read buffer was causing weird packet reception
-	// issues locally
-	//listener.SetReadBuffer(config.Service.SocketReadBuffer)
+
+	// There were some issues setting this locally during development. It may need
+	// to be configured automatically during development vs. production.
+	listener.SetReadBuffer(config.Service.SocketReadBuffer)
 	if err != nil {
 		log.Fatalf("ERROR: ListenUDP - %s", err)
 	}
