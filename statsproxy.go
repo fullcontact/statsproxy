@@ -74,6 +74,32 @@ func udpListener(listener *net.UDPConn) {
 	}
 }
 
+func tcpHealthCheckListener(listener *net.TCPListener) {
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		m := make([]byte, 6)
+		conn.Read(m)
+		conn.Write([]byte("health: up"))
+	}
+}
+
+func createTCPListener() *net.TCPListener {
+	a, err := net.ResolveTCPAddr("tcp4", ":8126")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	l, er := net.ListenTCP("tcp4", a)
+	if er != nil {
+		log.Fatal(err)
+	}
+	return l
+}
+
 func dataHandler(data []byte) {
 	packets := parseMessage(data)
 	for _, packet := range packets {
@@ -206,6 +232,9 @@ func main() {
 	for i := 0; i < config.Service.Workers; i++ {
 		go udpListener(listener)
 	}
+
+	l := createTCPListener()
+	go tcpHealthCheckListener(l)
 
 	monitor()
 }
