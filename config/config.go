@@ -15,15 +15,18 @@ type Host struct {
 }
 
 type StatsproxyConfig struct {
-	Statsd           Statsd `json:"statsd"`
-	MaxUDPPacketSize int    `json:"max_udp_packet_size"`
-	SocketReadBuffer int    `json:"socket_read_buffer"`
-	Port             string `json:"port"`
-	TickerPeriod     int    `json:"ticker_period"`
-	Workers          int
-	Name             string
-	Logger           LogConfig `json:"logger"`
-	WriterMultiplier int
+	Statsd            Statsd `json:"statsd"`
+	MaxUDPPacketSize  int    `json:"max_udp_packet_size"`
+	SocketReadBuffer  int    `json:"socket_read_buffer"`
+	Port              string `json:"port"`
+	TickerPeriod      int    `json:"ticker_period"`
+	Workers           int
+	Name              string
+	Logger            LogConfig `json:"logger"`
+	WriterMultiplier  int
+	MgmtPort          string `json:"tcp_management_port"`
+	HTTPPort          string `json:"http_port"`
+	TCPHealthResponse string `json:"tcp_health_response"`
 }
 
 type LogConfig struct {

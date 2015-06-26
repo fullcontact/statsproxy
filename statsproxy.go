@@ -64,10 +64,12 @@ func initializeUDPListener() *net.UDPConn {
 
 }
 
+// Our loadbalancer relies on the statsd tcp management port for doing health
+// checks, so we need to setup and emulate the behavior.
 func initializeTCPListener() *net.TCPListener {
-	a, err := net.ResolveTCPAddr("tcp4", ":8126")
+	a, err := net.ResolveTCPAddr("tcp4", config.Service.MgmtPort)
 	if err != nil {
-		log.Fatal("Couldn't resolve on port 8126: %s", err)
+		log.Fatal("Couldn't resolve the tcp management port: %s", err)
 	}
 
 	l, er := net.ListenTCP("tcp4", a)
@@ -118,7 +120,7 @@ func main() {
 	workers.InitializeTCPHealthCheck(listenerTCP)
 
 	http.HandleFunc("/healthcheck", healthCheck)
-	go http.ListenAndServe(":8080", nil)
+	go http.ListenAndServe(config.Service.HTTPPort, nil)
 
 	monitor()
 }

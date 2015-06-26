@@ -1,6 +1,7 @@
 package workers
 
 import (
+	"github.com/frightenedmonkey/statsproxy/config"
 	"log"
 	"net"
 )
@@ -19,6 +20,6 @@ func tcpHealthCheckListener(listener *net.TCPListener) {
 
 		m := make([]byte, 6)
 		conn.Read(m)
-		conn.Write([]byte("health: up"))
+		conn.Write([]byte(config.Service.TCPHealthResponse))
 	}
 }
