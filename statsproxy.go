@@ -13,7 +13,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
-	"runtime/pprof"
+	//"runtime/pprof"
 	"syscall"
 )
 
@@ -23,27 +23,17 @@ var (
 
 var signalchan chan os.Signal
 
-func monitor() {
-	if *cpuprofile != "" {
-		f, err := os.Create(*cpuprofile)
-		if err != nil {
-			log.Fatal(err)
-		}
-		pprof.StartCPUProfile(f)
-		defer pprof.StopCPUProfile()
-	}
-
-signalLoop:
-	for {
-		select {
-		case sig := <-signalchan:
-			common.Logger.Info(fmt.Sprintf("!! Caught signal %d... shutting down\n", sig))
-			break signalLoop
-		case <-common.StatsTicker.C:
-			workers.SendStats()
-		}
-	}
-}
+//func monitor() {
+//	if *cpuprofile != "" {
+//		f, err := os.Create(*cpuprofile)
+//		if err != nil {
+//			log.Fatal(err)
+//		}
+//		pprof.StartCPUProfile(f)
+//		defer pprof.StopCPUProfile()
+//	}
+//
+//}
 
 func initializeUDPListener() *net.UDPConn {
 	address, err := net.ResolveUDPAddr("udp", config.Service.Port)
@@ -122,7 +112,17 @@ func main() {
 	http.HandleFunc("/healthcheck", healthCheck)
 	go http.ListenAndServe(config.Service.HTTPPort, nil)
 
-	monitor()
+signalLoop:
+	for {
+		select {
+		case sig := <-signalchan:
+			common.Logger.Info(fmt.Sprintf("!! Caught signal %d... shutting down\n", sig))
+			break signalLoop
+		case <-common.StatsTicker.C:
+			common.Logger.Info("Sending statsproxy service stats to statsd")
+			workers.SendStats()
+		}
+	}
 }
 
 func healthCheck(w http.ResponseWriter, r *http.Request) {

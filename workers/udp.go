@@ -7,7 +7,6 @@ import (
 	"github.com/frightenedmonkey/statsproxy/config"
 	"net"
 	"strconv"
-	"strings"
 	"sync/atomic"
 )
 
