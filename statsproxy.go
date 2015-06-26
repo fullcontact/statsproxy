@@ -46,9 +46,9 @@ signalLoop:
 }
 
 func initializeUDPListener() *net.UDPConn {
-	address, er := net.ResolveUDPAddr("udp", config.Service.Port)
-	if er != nil {
-		log.Fatalf("ERROR: could not resolve local UDP address - %s", er)
+	address, err := net.ResolveUDPAddr("udp", config.Service.Port)
+	if err != nil {
+		log.Fatalf("ERROR: could not resolve local UDP address - %s", err)
 	}
 
 	common.Logger.Info(fmt.Sprintf("Listening on %s", address))
