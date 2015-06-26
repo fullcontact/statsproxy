@@ -34,7 +34,7 @@ func hostWriter(host config.Host) {
 	coalescedPacket := make([]byte, 0)
 	for {
 		newMessage := <-common.HostChans[host]
-		if len(coalescedPacket)+len([]byte(newMessage)) > 1400 {
+		if len(coalescedPacket)+len([]byte(newMessage)) > config.Service.MaxCoalescedPacketSize {
 			common.HostConns[host].Write(coalescedPacket)
 			coalescedPacket = []byte(newMessage)
 		} else {

@@ -15,18 +15,19 @@ type Host struct {
 }
 
 type StatsproxyConfig struct {
-	Statsd            Statsd `json:"statsd"`
-	MaxUDPPacketSize  int    `json:"max_udp_packet_size"`
-	SocketReadBuffer  int    `json:"socket_read_buffer"`
-	Port              string `json:"port"`
-	TickerPeriod      int    `json:"ticker_period"`
-	Workers           int
-	Name              string
-	Logger            LogConfig `json:"logger"`
-	WriterMultiplier  int
-	MgmtPort          string `json:"tcp_management_port"`
-	HTTPPort          string `json:"http_port"`
-	TCPHealthResponse string `json:"tcp_health_response"`
+	Statsd                 Statsd `json:"statsd"`
+	MaxUDPPacketSize       int    `json:"max_udp_packet_size"`
+	SocketReadBuffer       int    `json:"socket_read_buffer"`
+	Port                   string `json:"port"`
+	TickerPeriod           int    `json:"ticker_period"`
+	Workers                int
+	Name                   string
+	Logger                 LogConfig `json:"logger"`
+	WriterMultiplier       int
+	MgmtPort               string `json:"tcp_management_port"`
+	HTTPPort               string `json:"http_port"`
+	TCPHealthResponse      string `json:"tcp_health_response"`
+	MaxCoalescedPacketSize int
 }
 
 type LogConfig struct {
@@ -59,6 +60,7 @@ func (s StatsproxyConfig) setOtherDefaults() {
 	s.Workers = 2
 	s.Name = "Statsproxy"
 	s.WriterMultiplier = 2
+	s.MaxCoalescedPacketSize = 1400
 }
 
 func newLogger() LogConfig {
