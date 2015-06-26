@@ -22,17 +22,21 @@ func StartUDPListeners(l *net.UDPConn) {
 }
 
 func StartUDPWriters() {
+	common.Logger.Info("Starting UDP writers")
 	for i := 0; i < config.Service.WriterMultiplier; i++ {
 		for _, host := range config.Service.Statsd.Hosts {
+			common.Logger.Info("Spawning writer for host " + host.FQDN)
 			go hostWriter(host)
 		}
 	}
 }
 
 func hostWriter(host config.Host) {
+	common.Logger.Info(fmt.Sprintf("Initializing writer for host "+host.FQDN+" on port %v", host.Port))
 	coalescedPacket := make([]byte, 0)
 	for {
 		newMessage := <-common.HostChans[host]
+		common.Logger.Dev("Writer received message " + newMessage)
 		if len(coalescedPacket)+len([]byte(newMessage)) > config.Service.MaxCoalescedPacketSize {
 			common.HostConns[host].Write(coalescedPacket)
 			coalescedPacket = []byte(newMessage)
@@ -80,6 +84,7 @@ func parseMessage(data []byte) []Packet {
 				string(line)))
 			continue
 		}
+		common.Logger.Debug("Received metric " + string(line))
 
 		name := input[:index]
 

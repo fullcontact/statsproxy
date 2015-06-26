@@ -58,18 +58,19 @@ func InitializeConfig(f string) error {
 	}
 
 	Service.setOtherDefaults()
+	Service.setServiceMetricsNamespace()
 
 	return nil
 }
 
-func (s StatsproxyConfig) setOtherDefaults() {
+func (s *StatsproxyConfig) setOtherDefaults() {
 	s.Workers = 2
 	s.Name = "Statsproxy"
 	s.WriterMultiplier = 2
 	s.MaxCoalescedPacketSize = 1400
 }
 
-func setServiceMetricsNamespace(s StatsproxyConfig) {
+func (s *StatsproxyConfig) setServiceMetricsNamespace() {
 	ns := strings.ToLower(s.Name)
 	// We are treating the environment string as optional, so if it's actually set,
 	// we should append it to the service namespace for metrics
