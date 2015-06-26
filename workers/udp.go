@@ -29,8 +29,7 @@ func StartUDPWriters() {
 }
 
 func hostWriter(host config.Host) {
-	// just need a starting length to the slice, 512 works?
-	coalescedPacket := make([]byte, 512)
+	coalescedPacket := make([]byte, 0)
 	for {
 		newMessage := <-common.HostChans[host]
 		if len(coalescedPacket)+len([]byte(newMessage)) > 1400 {
