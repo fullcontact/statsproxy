@@ -23,8 +23,10 @@ func StartUDPListeners(l *net.UDPConn) {
 }
 
 func StartUDPWriters() {
-	for _, host := range config.Service.Statsd.Hosts {
-		go hostWriter(host)
+	for i := 0; i < config.Service.WriterMultiplier; i++ {
+		for _, host := range config.Service.Statsd.Hosts {
+			go hostWriter(host)
+		}
 	}
 }
 

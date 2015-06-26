@@ -23,6 +23,7 @@ type StatsproxyConfig struct {
 	Workers          int
 	Name             string
 	Logger           LogConfig `json:"logger"`
+	WriterMultiplier int
 }
 
 type LogConfig struct {
@@ -54,6 +55,7 @@ func InitializeConfig(f string) error {
 func (s StatsproxyConfig) setOtherDefaults() {
 	s.Workers = 2
 	s.Name = "Statsproxy"
+	s.WriterMultiplier = 2
 }
 
 func newLogger() LogConfig {
