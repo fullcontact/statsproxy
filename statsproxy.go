@@ -77,9 +77,12 @@ func udpListener(listener *net.UDPConn) {
 func tcpHealthCheckListener(listener *net.TCPListener) {
 	for {
 		conn, err := listener.Accept()
+
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		defer conn.Close()
 
 		m := make([]byte, 6)
 		conn.Read(m)
