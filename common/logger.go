@@ -9,6 +9,7 @@ import (
 var Logger LogAdapter
 
 type LogAdapter interface {
+	Dev(m string)
 	Debug(m string)
 	Info(m string)
 	Warning(m string)
@@ -19,6 +20,10 @@ type LogAdapter interface {
 type DevelopLogger struct{}
 type SyslogLogger struct {
 	w *syslog.Writer
+}
+
+func (d *DevelopLogger) Dev(m string) {
+	log.Printf("[DEV] %v", m)
 }
 
 func (d *DevelopLogger) Debug(m string) {
@@ -54,6 +59,9 @@ func InitializeLogger() error {
 
 func newSyslogLogger(w *syslog.Writer) *SyslogLogger {
 	return &SyslogLogger{w: w}
+}
+
+func (s *SyslogLogger) Dev(m string) {
 }
 
 func (s *SyslogLogger) Debug(m string) {
