@@ -9,6 +9,7 @@ import (
 	"github.com/frightenedmonkey/statsproxy/workers"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"runtime"
@@ -64,9 +65,9 @@ func initializeUDPListener() *net.UDPConn {
 }
 
 func initializeTCPListener() *net.TCPListener {
-	a, err := net.ResolveTCPAddr("tcp4", ":8127")
+	a, err := net.ResolveTCPAddr("tcp4", ":8126")
 	if err != nil {
-		log.Fatal("Couldn't resolve on port 8127: %s", err)
+		log.Fatal("Couldn't resolve on port 8126: %s", err)
 	}
 
 	l, er := net.ListenTCP("tcp4", a)
@@ -116,5 +117,14 @@ func main() {
 	defer listenerTCP.Close()
 	workers.InitializeTCPHealthCheck(listenerTCP)
 
+	http.HandleFunc("/healthcheck", healthCheck)
+	go http.ListenAndServe(":8080", nil)
+
 	monitor()
+}
+
+func healthCheck(w http.ResponseWriter, r *http.Request) {
+	if _, err := w.Write([]byte("OK")); err != nil {
+		common.Logger.Err(fmt.Sprintf("Error sending healthcheck: %v", err))
+	}
 }
