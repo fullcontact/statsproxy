@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path"
+	"strings"
 )
 
 var Service StatsproxyConfig
@@ -28,6 +29,8 @@ type StatsproxyConfig struct {
 	HTTPPort               string `json:"http_port"`
 	TCPHealthResponse      string `json:"tcp_health_response"`
 	MaxCoalescedPacketSize int
+	Environment            string `json:"service_environment"`
+	MetricsNamespace       string
 }
 
 type LogConfig struct {
@@ -45,6 +48,9 @@ func InitializeConfig(f string) error {
 		return err
 	}
 
+	// Default the Environment member to an empty string
+	Service.Environment = ""
+
 	er := json.Unmarshal(raw, &Service)
 
 	if er != nil {
@@ -61,6 +67,16 @@ func (s StatsproxyConfig) setOtherDefaults() {
 	s.Name = "Statsproxy"
 	s.WriterMultiplier = 2
 	s.MaxCoalescedPacketSize = 1400
+}
+
+func setServiceMetricsNamespace(s StatsproxyConfig) {
+	ns := strings.ToLower(s.Name)
+	// We are treating the environment string as optional, so if it's actually set,
+	// we should append it to the service namespace for metrics
+	if len(s.Environment) > 0 {
+		ns = ns + "." + s.Environment
+	}
+	s.MetricsNamespace = ns
 }
 
 func newLogger() LogConfig {

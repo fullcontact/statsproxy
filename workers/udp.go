@@ -117,14 +117,10 @@ func SendStats() {
 		common.Logger.Info(fmt.Sprintf(
 			"Received %d packets in last 5 seconds (%f pps) for host %s\n",
 			packets, float64(packets)/5, host))
-		sendCounter("statsproxy.host."+sanitize(host)+".packets", int32(packets))
+		sendCounter("statsproxy.host."+config.Service.MetricsNamespace+".packets", int32(packets))
 	}
 }
 
 func sendCounter(path string, delta int32) {
 	packetHandler(Packet{path, path + ":" + strconv.Itoa(int(delta)) + "|c\n"})
-}
-
-func sanitize(h config.Host) string {
-	return strings.Replace(strings.Replace(h.String(), ".", "_", -1), ":", "_", -1)
 }
