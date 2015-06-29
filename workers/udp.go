@@ -84,7 +84,7 @@ func parseMessage(data []byte) []Packet {
 				string(line)))
 			continue
 		}
-		common.Logger.Debug("Received metric " + string(line))
+		common.Logger.Dev("Received metric " + string(line))
 
 		name := input[:index]
 
