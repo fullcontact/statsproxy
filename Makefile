@@ -9,10 +9,10 @@ get:
 	go get
 
 fmt: 
-	go fmt github.com/frightenedmonkey/statsproxy
+	go fmt github.com/fullcontact/statsproxy
 
 test:
-	go test github.com/frightenedmonkey/statsproxy
+	go test github.com/fullcontact/statsproxy
 
 deps:
 	go get -u

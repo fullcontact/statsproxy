@@ -1,7 +1,7 @@
 package workers
 
 import (
-	"github.com/frightenedmonkey/statsproxy/config"
+	"github.com/fullcontact/statsproxy/config"
 	"log"
 	"net"
 )

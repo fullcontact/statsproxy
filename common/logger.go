@@ -1,7 +1,7 @@
 package common
 
 import (
-	"github.com/frightenedmonkey/statsproxy/config"
+	"github.com/fullcontact/statsproxy/config"
 	"log"
 	"log/syslog"
 )

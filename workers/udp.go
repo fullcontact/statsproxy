@@ -3,8 +3,8 @@ package workers
 import (
 	"bytes"
 	"fmt"
-	"github.com/frightenedmonkey/statsproxy/common"
-	"github.com/frightenedmonkey/statsproxy/config"
+	"github.com/fullcontact/statsproxy/common"
+	"github.com/fullcontact/statsproxy/config"
 	"net"
 	"strconv"
 	"sync/atomic"
