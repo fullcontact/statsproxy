@@ -1,0 +1,22 @@
+{
+    "statsd": {
+        "hosts": [
+            {
+                "fqdn": "localhost",
+                "port": 8132
+            }
+        ]
+    },
+    "max_udp_packet_size": 512,
+    "tcp_management_port": "0.0.0.0:8126",
+    "tcp_health_response": "health: up",
+    "service_environment": "dev",
+    "socket_read_buffer": 512,
+    "port": "0.0.0.0:8125",
+    "http_port": "0.0.0.0:8080",
+    "workers": 2,
+    "ticker_period": 5,
+    "logger": {
+        "develop": true
+    }
+}
